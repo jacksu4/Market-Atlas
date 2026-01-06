@@ -61,6 +61,8 @@ class Settings(BaseSettings):
 
     # Telegram
     TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_WEBHOOK_SECRET: str = ""
+    TELEGRAM_BOT_USERNAME: str = "market_atlas_bot"
 
     # AI Model Configuration
     CLAUDE_HAIKU_MODEL: str = "claude-3-5-haiku-20241022"

@@ -52,3 +52,18 @@ def decode_token(token: str) -> Optional[dict]:
         return payload
     except JWTError:
         return None
+
+
+def create_telegram_link_token(user_id: str) -> str:
+    """
+    Create short-lived Telegram deep link token.
+    Expires in 10 minutes.
+    Contains user_id for verification.
+    """
+    to_encode = {"sub": user_id, "type": "telegram_link"}
+    expire = datetime.now(timezone.utc) + timedelta(minutes=10)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(
+        to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
+    return encoded_jwt

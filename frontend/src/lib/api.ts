@@ -62,6 +62,37 @@ class ApiClient {
     return this.fetch<User>("/auth/me");
   }
 
+  // Settings API
+  async updateNotificationPreferences(preferences: {
+    news_alerts?: boolean;
+    filing_alerts?: boolean;
+    research_complete?: boolean;
+  }): Promise<User> {
+    return this.fetch<User>("/auth/settings", {
+      method: "PATCH",
+      body: JSON.stringify({ notification_preferences: preferences }),
+    });
+  }
+
+  async generateTelegramLink(): Promise<{ link: string; expires_in: number }> {
+    return this.fetch("/auth/telegram/link", {
+      method: "POST",
+    });
+  }
+
+  async connectTelegram(chatId: string): Promise<User> {
+    return this.fetch<User>("/auth/telegram/connect", {
+      method: "POST",
+      body: JSON.stringify({ chat_id: chatId }),
+    });
+  }
+
+  async disconnectTelegram(): Promise<User> {
+    return this.fetch<User>("/auth/telegram/disconnect", {
+      method: "DELETE",
+    });
+  }
+
   // Watchlists
   async getWatchlists(): Promise<Watchlist[]> {
     return this.fetch<Watchlist[]>("/watchlists");
