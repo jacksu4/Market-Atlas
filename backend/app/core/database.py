@@ -48,10 +48,16 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
-def get_sync_db() -> Session:
-    """Get synchronous database session for Celery tasks"""
+def get_sync_db():
+    """
+    Get synchronous database session for Celery tasks.
+    Use as a context manager to ensure proper cleanup:
+
+    with get_sync_db() as db:
+        # use db
+    """
     db = SyncSessionLocal()
     try:
-        return db
+        yield db
     finally:
-        pass  # Caller is responsible for closing
+        db.close()

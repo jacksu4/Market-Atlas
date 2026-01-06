@@ -32,6 +32,8 @@ class FinnhubService:
 
         try:
             async with httpx.AsyncClient() as client:
+                # Note: Finnhub API requires token in query params (not headers)
+                # This is a limitation of their API design
                 response = await client.get(
                     f"{self.BASE_URL}/company-news",
                     params={

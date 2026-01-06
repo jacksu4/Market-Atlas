@@ -29,7 +29,12 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved token on mount
+    // SECURITY NOTE: Using localStorage for tokens is vulnerable to XSS attacks.
+    // For production, consider:
+    // 1. Using httpOnly cookies for refresh tokens (requires backend support)
+    // 2. Storing access tokens in memory only (lost on refresh)
+    // 3. Implementing proper CSP (Content Security Policy)
+    // 4. Regular security audits of dependencies
     const savedToken = localStorage.getItem("access_token");
     if (savedToken) {
       setToken(savedToken);
@@ -51,6 +56,9 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const tokenResponse = await api.login(email, password);
+    // SECURITY: Store tokens in localStorage (see security note above)
+    // Access token: short-lived, used for API requests
+    // Refresh token: longer-lived, used to get new access tokens
     localStorage.setItem("access_token", tokenResponse.access_token);
     localStorage.setItem("refresh_token", tokenResponse.refresh_token);
     api.setToken(tokenResponse.access_token);

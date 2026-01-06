@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Optional
 
+from pydantic import field_validator, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,10 +25,33 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # JWT Authentication
-    JWT_SECRET_KEY: str = "your-super-secret-jwt-key-change-in-production"
+    JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
+    def validate_jwt_secret(cls, v: str) -> str:
+        # Prevent using insecure default values
+        insecure_defaults = [
+            "your-super-secret-jwt-key-change-in-production",
+            "change-me",
+            "secret",
+            "jwt-secret",
+        ]
+        if v.lower() in [d.lower() for d in insecure_defaults]:
+            raise ValueError(
+                "JWT_SECRET_KEY cannot use default/example values. "
+                "Please set a secure random secret key."
+            )
+        # Enforce minimum length of 32 characters
+        if len(v) < 32:
+            raise ValueError(
+                "JWT_SECRET_KEY must be at least 32 characters long for security. "
+                f"Current length: {len(v)}"
+            )
+        return v
 
     # External APIs
     ANTHROPIC_API_KEY: str = ""
@@ -44,7 +68,11 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [self.FRONTEND_URL, "http://localhost:3000"]
+        # Deduplicate origins
+        origins = [self.FRONTEND_URL]
+        if "http://localhost:3000" not in origins:
+            origins.append("http://localhost:3000")
+        return origins
 
 
 @lru_cache

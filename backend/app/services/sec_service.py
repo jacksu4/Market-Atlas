@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 import httpx
 import re
+from bs4 import BeautifulSoup
 
 from app.core.config import settings
 
@@ -80,9 +81,13 @@ class SECService:
                     content = response.text
 
                     if "<html" in content.lower():
-                        content = re.sub(r"<script[^>]*>.*?</script>", "", content, flags=re.DOTALL | re.IGNORECASE)
-                        content = re.sub(r"<style[^>]*>.*?</style>", "", content, flags=re.DOTALL | re.IGNORECASE)
-                        content = re.sub(r"<[^>]+>", " ", content)
+                        # Use BeautifulSoup for safe HTML parsing
+                        soup = BeautifulSoup(content, "lxml")
+                        # Remove script and style elements
+                        for script in soup(["script", "style"]):
+                            script.decompose()
+                        # Get text and normalize whitespace
+                        content = soup.get_text(separator=" ", strip=True)
                         content = re.sub(r"\s+", " ", content)
 
                     return content.strip()
@@ -168,10 +173,13 @@ class SECService:
 
                     # If HTML, strip tags
                     if "<html" in content.lower():
-                        # Simple HTML tag removal
-                        content = re.sub(r"<script[^>]*>.*?</script>", "", content, flags=re.DOTALL | re.IGNORECASE)
-                        content = re.sub(r"<style[^>]*>.*?</style>", "", content, flags=re.DOTALL | re.IGNORECASE)
-                        content = re.sub(r"<[^>]+>", " ", content)
+                        # Use BeautifulSoup for safe HTML parsing
+                        soup = BeautifulSoup(content, "lxml")
+                        # Remove script and style elements
+                        for script in soup(["script", "style"]):
+                            script.decompose()
+                        # Get text and normalize whitespace
+                        content = soup.get_text(separator=" ", strip=True)
                         content = re.sub(r"\s+", " ", content)
 
                     return content.strip()
