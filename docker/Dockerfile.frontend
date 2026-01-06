@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy application code
+COPY frontend/ .
+
+# Create .next directory and set permissions before switching user
+RUN mkdir -p .next && chmod -R 777 .next
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
