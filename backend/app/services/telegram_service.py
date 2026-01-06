@@ -2,6 +2,7 @@ from typing import Optional
 import httpx
 
 from app.core.config import settings
+from app.core.logging_config import app_logger
 
 
 class TelegramService:
@@ -25,7 +26,7 @@ class TelegramService:
     ) -> bool:
         """Synchronous version for Celery tasks"""
         if not self.bot_token:
-            print("Telegram bot token not configured")
+            app_logger.warning("Telegram bot token not configured")
             return False
 
         try:
@@ -44,10 +45,10 @@ class TelegramService:
                 if response.status_code == 200:
                     return True
                 else:
-                    print(f"Telegram API error: {response.text}")
+                    app_logger.error(f"Telegram API error: {response.text}", extra={"response_text": response.text})
                     return False
         except Exception as e:
-            print(f"Error sending Telegram message: {e}")
+            app_logger.error(f"Error sending Telegram message: {e}", extra={"error": str(e)})
             return False
 
     def send_research_complete_notification_sync(
@@ -106,7 +107,7 @@ View full research in Market Atlas."""
         Send a message to a Telegram chat.
         """
         if not self.bot_token:
-            print("Telegram bot token not configured")
+            app_logger.warning("Telegram bot token not configured")
             return False
 
         try:
@@ -125,10 +126,10 @@ View full research in Market Atlas."""
                 if response.status_code == 200:
                     return True
                 else:
-                    print(f"Telegram API error: {response.text}")
+                    app_logger.error(f"Telegram API error: {response.text}", extra={"response_text": response.text})
                     return False
         except Exception as e:
-            print(f"Error sending Telegram message: {e}")
+            app_logger.error(f"Error sending Telegram message: {e}", extra={"error": str(e)})
             return False
 
     async def send_research_complete_notification(

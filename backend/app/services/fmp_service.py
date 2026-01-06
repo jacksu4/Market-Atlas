@@ -2,6 +2,7 @@ from typing import List, Optional
 import httpx
 
 from app.core.config import settings
+from app.core.logging_config import app_logger
 
 
 class FMPService:
@@ -44,7 +45,7 @@ class FMPService:
                     elif isinstance(data, dict):
                         return data
         except Exception as e:
-            print(f"Error fetching earnings transcript for {ticker}: {e}")
+            app_logger.error(f"Error fetching earnings transcript for {ticker}: {e}", extra={"error": str(e)})
 
         return None
 
@@ -66,7 +67,7 @@ class FMPService:
                     if isinstance(data, list):
                         return data[:limit]
         except Exception as e:
-            print(f"Error fetching earnings transcripts for {ticker}: {e}")
+            app_logger.error(f"Error fetching earnings transcripts for {ticker}: {e}", extra={"error": str(e)})
 
         return []
 
@@ -88,7 +89,7 @@ class FMPService:
                     if isinstance(data, list) and len(data) > 0:
                         return data[0]
         except Exception as e:
-            print(f"Error fetching company profile for {ticker}: {e}")
+            app_logger.error(f"Error fetching company profile for {ticker}: {e}", extra={"error": str(e)})
 
         return None
 
@@ -112,7 +113,7 @@ class FMPService:
                 if response.status_code == 200:
                     return response.json()
         except Exception as e:
-            print(f"Error fetching income statement for {ticker}: {e}")
+            app_logger.error(f"Error fetching income statement for {ticker}: {e}", extra={"error": str(e)})
 
         return []
 
@@ -151,7 +152,7 @@ class FMPService:
                     elif isinstance(data, dict):
                         return data
         except Exception as e:
-            print(f"Error fetching earnings transcript for {ticker}: {e}")
+            app_logger.error(f"Error fetching earnings transcript for {ticker}: {e}", extra={"error": str(e)})
 
         return None
 
@@ -175,7 +176,7 @@ class FMPService:
                     if isinstance(data, list):
                         return data[:limit]
         except Exception as e:
-            print(f"Error fetching earnings transcripts for {ticker}: {e}")
+            app_logger.error(f"Error fetching earnings transcripts for {ticker}: {e}", extra={"error": str(e)})
 
         return []
 
@@ -199,7 +200,7 @@ class FMPService:
                     if isinstance(data, list) and len(data) > 0:
                         return data[0]
         except Exception as e:
-            print(f"Error fetching company profile for {ticker}: {e}")
+            app_logger.error(f"Error fetching company profile for {ticker}: {e}", extra={"error": str(e)})
 
         return None
 
@@ -226,7 +227,7 @@ class FMPService:
                 if response.status_code == 200:
                     return response.json()
         except Exception as e:
-            print(f"Error fetching income statement for {ticker}: {e}")
+            app_logger.error(f"Error fetching income statement for {ticker}: {e}", extra={"error": str(e)})
 
         return []
 
@@ -266,7 +267,7 @@ class FMPService:
                 if response.status_code == 200:
                     return response.json()
         except Exception as e:
-            print(f"Error running stock screener: {e}")
+            app_logger.error(f"Error running stock screener: {e}", extra={"error": str(e)})
 
         return []
 

@@ -5,7 +5,8 @@ import pytest
 import asyncio
 from typing import AsyncGenerator
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
 from app.main import app
 from app.core.database import Base, get_db
@@ -32,7 +33,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    TestSessionLocal = async_sessionmaker(
+    TestSessionLocal = sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )
 

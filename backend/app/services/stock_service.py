@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.stock import Stock
 from app.core.config import settings
+from app.core.logging_config import app_logger
 
 
 async def get_or_create_stock(db: AsyncSession, ticker: str) -> Stock:

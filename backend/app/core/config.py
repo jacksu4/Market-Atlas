@@ -62,16 +62,27 @@ class Settings(BaseSettings):
     # Telegram
     TELEGRAM_BOT_TOKEN: str = ""
 
+    # AI Model Configuration
+    CLAUDE_HAIKU_MODEL: str = "claude-3-5-haiku-20241022"
+    CLAUDE_SONNET_MODEL: str = "claude-sonnet-4-20250514"
+
     # CORS
     BACKEND_URL: str = "http://localhost:8000"
     FRONTEND_URL: str = "http://localhost:3000"
 
     @property
     def cors_origins(self) -> list[str]:
-        # Deduplicate origins
+        """
+        Get CORS origins based on environment.
+        In production, only use FRONTEND_URL.
+        In development, also allow localhost:3000.
+        """
         origins = [self.FRONTEND_URL]
-        if "http://localhost:3000" not in origins:
+
+        # Only add localhost in development
+        if self.ENVIRONMENT == "development" and "localhost" not in self.FRONTEND_URL:
             origins.append("http://localhost:3000")
+
         return origins
 
 

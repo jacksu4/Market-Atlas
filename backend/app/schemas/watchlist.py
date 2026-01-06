@@ -27,9 +27,10 @@ class StockCreate(BaseModel):
         if len(v) > 10:
             raise ValueError("Ticker must be 10 characters or less")
 
-        if not re.match(r"^[A-Z0-9.\-]+$", v):
+        # Validate format: starts with letter, may contain letters, numbers, hyphens, periods
+        if not re.match(r"^[A-Z][A-Z0-9.\-]*$", v):
             raise ValueError(
-                "Ticker must contain only uppercase letters, numbers, hyphens, or periods"
+                "Ticker must start with a letter and contain only uppercase letters, numbers, hyphens, or periods"
             )
 
         return v
@@ -59,22 +60,26 @@ class WatchlistItemCreate(BaseModel):
     def validate_ticker(cls, v: str) -> str:
         """
         Validate stock ticker format:
-        - 1-5 characters
-        - Uppercase letters and optionally numbers
-        - Some tickers may have hyphens (e.g., BRK-A)
+        - 1-5 characters for standard tickers
+        - Uppercase letters (A-Z)
+        - Some tickers may have hyphens (e.g., BRK-A) or periods
+        - Maximum 10 characters including special chars
         """
         v = v.strip().upper()
 
         if not v:
             raise ValueError("Ticker cannot be empty")
 
+        # Standard ticker: 1-5 uppercase letters
+        # Extended ticker: can include hyphens, periods (e.g., BRK-A, BRK.A)
+        # Maximum total length: 10 characters
         if len(v) > 10:
             raise ValueError("Ticker must be 10 characters or less")
 
-        # Allow letters, numbers, hyphens, and periods (for some international tickers)
-        if not re.match(r"^[A-Z0-9.\-]+$", v):
+        # Validate format: starts with letter, may contain letters, numbers, hyphens, periods
+        if not re.match(r"^[A-Z][A-Z0-9.\-]*$", v):
             raise ValueError(
-                "Ticker must contain only uppercase letters, numbers, hyphens, or periods"
+                "Ticker must start with a letter and contain only uppercase letters, numbers, hyphens, or periods"
             )
 
         return v

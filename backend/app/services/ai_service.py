@@ -4,6 +4,7 @@ import json
 import anthropic
 
 from app.core.config import settings
+from app.core.logging_config import app_logger
 from app.models.news import NewsSentiment, NewsImportance
 
 
@@ -69,7 +70,7 @@ Only output valid JSON, no other text.""",
                 "ai_summary": result.get("ai_summary", ""),
             }
         except Exception as e:
-            print(f"Error analyzing news with AI: {e}")
+            app_logger.error(f"Error analyzing news with AI: {e}", extra={"error": str(e)})
             return {
                 "sentiment": NewsSentiment.NEUTRAL,
                 "importance": NewsImportance.MEDIUM,
@@ -117,7 +118,7 @@ Only output valid JSON.""",
 
             return extract_json(message.content[0].text)
         except Exception as e:
-            print(f"Error analyzing SEC filing with AI: {e}")
+            app_logger.error(f"Error analyzing SEC filing with AI: {e}", extra={"error": str(e)})
             return {"error": str(e)}
 
     def analyze_earnings_call_sync(self, transcript: str, ticker: str, quarter: str) -> dict:
@@ -161,7 +162,7 @@ Only output valid JSON.""",
 
             return extract_json(message.content[0].text)
         except Exception as e:
-            print(f"Error analyzing earnings call with AI: {e}")
+            app_logger.error(f"Error analyzing earnings call with AI: {e}", extra={"error": str(e)})
             return {"error": str(e)}
 
     def run_discovery_sync(self, theme: str, criteria: Optional[str] = None) -> dict:
@@ -210,10 +211,10 @@ Only output valid JSON."""
             )
 
             response_text = message.content[0].text
-            print(f"Discovery response length: {len(response_text)}")
+            app_logger.info(f"Discovery response length: {len(response_text)}", extra={"response_length": len(response_text)})
             return extract_json(response_text)
         except Exception as e:
-            print(f"Error running AI discovery: {e}")
+            app_logger.error(f"Error running AI discovery: {e}", extra={"error": str(e)})
             return {"error": str(e)}
 
     # ==================== ASYNC METHODS (for FastAPI) ====================
@@ -261,7 +262,7 @@ Only output valid JSON, no other text.""",
                 "ai_summary": result.get("ai_summary", ""),
             }
         except Exception as e:
-            print(f"Error analyzing news with AI: {e}")
+            app_logger.error(f"Error analyzing news with AI: {e}", extra={"error": str(e)})
             return {
                 "sentiment": NewsSentiment.NEUTRAL,
                 "importance": NewsImportance.MEDIUM,
@@ -313,7 +314,7 @@ Only output valid JSON.""",
             import json
             return json.loads(message.content[0].text)
         except Exception as e:
-            print(f"Error analyzing SEC filing with AI: {e}")
+            app_logger.error(f"Error analyzing SEC filing with AI: {e}", extra={"error": str(e)})
             return {"error": str(e)}
 
     async def analyze_earnings_call(self, transcript: str, ticker: str, quarter: str) -> dict:
@@ -360,7 +361,7 @@ Only output valid JSON.""",
             import json
             return json.loads(message.content[0].text)
         except Exception as e:
-            print(f"Error analyzing earnings call with AI: {e}")
+            app_logger.error(f"Error analyzing earnings call with AI: {e}", extra={"error": str(e)})
             return {"error": str(e)}
 
     async def run_discovery(self, theme: str, criteria: Optional[str] = None) -> dict:
@@ -413,7 +414,7 @@ Only output valid JSON."""
             import json
             return json.loads(message.content[0].text)
         except Exception as e:
-            print(f"Error running AI discovery: {e}")
+            app_logger.error(f"Error running AI discovery: {e}", extra={"error": str(e)})
             return {"error": str(e)}
 
 

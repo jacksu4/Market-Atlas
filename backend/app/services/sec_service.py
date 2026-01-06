@@ -5,6 +5,7 @@ import re
 from bs4 import BeautifulSoup
 
 from app.core.config import settings
+from app.core.logging_config import app_logger
 
 
 class SECService:
@@ -62,7 +63,7 @@ class SECService:
 
                     return results
         except Exception as e:
-            print(f"Error fetching SEC filings for CIK {cik}: {e}")
+            app_logger.error(f"Error fetching SEC filings for CIK {cik}: {e}", extra={"error": str(e)})
 
         return []
 
@@ -92,7 +93,7 @@ class SECService:
 
                     return content.strip()
         except Exception as e:
-            print(f"Error fetching filing text from {filing_url}: {e}")
+            app_logger.error(f"Error fetching filing text from {filing_url}: {e}", extra={"error": str(e)})
 
         return None
 
@@ -151,7 +152,7 @@ class SECService:
 
                     return results
         except Exception as e:
-            print(f"Error fetching SEC filings for CIK {cik}: {e}")
+            app_logger.error(f"Error fetching SEC filings for CIK {cik}: {e}", extra={"error": str(e)})
 
         return []
 
@@ -184,7 +185,7 @@ class SECService:
 
                     return content.strip()
         except Exception as e:
-            print(f"Error fetching filing text from {filing_url}: {e}")
+            app_logger.error(f"Error fetching filing text from {filing_url}: {e}", extra={"error": str(e)})
 
         return None
 
@@ -236,7 +237,7 @@ class SECService:
 
                     return results
         except Exception as e:
-            print(f"Error searching SEC filings for {ticker}: {e}")
+            app_logger.error(f"Error searching SEC filings for {ticker}: {e}", extra={"error": str(e)})
 
         return []
 

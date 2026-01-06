@@ -4,6 +4,7 @@ from typing import List, Optional
 import httpx
 
 from app.core.config import settings
+from app.core.logging_config import app_logger
 
 
 class PolygonService:
@@ -47,7 +48,7 @@ class PolygonService:
                     results = data.get("results", [])
                     return [self._transform_news_item(item, ticker) for item in results]
         except Exception as e:
-            print(f"Error fetching Polygon news for {ticker}: {e}")
+            app_logger.error(f"Error fetching Polygon news for {ticker}: {e}", extra={"error": str(e)})
 
         return []
 
@@ -68,7 +69,7 @@ class PolygonService:
                     data = response.json()
                     return data.get("results")
         except Exception as e:
-            print(f"Error fetching Polygon ticker details for {ticker}: {e}")
+            app_logger.error(f"Error fetching Polygon ticker details for {ticker}: {e}", extra={"error": str(e)})
 
         return None
 
@@ -93,7 +94,7 @@ class PolygonService:
                     data = response.json()
                     return data.get("results", [])
         except Exception as e:
-            print(f"Error fetching Polygon financials for {ticker}: {e}")
+            app_logger.error(f"Error fetching Polygon financials for {ticker}: {e}", extra={"error": str(e)})
 
         return []
 

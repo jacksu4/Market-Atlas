@@ -4,6 +4,7 @@ from typing import List, Optional
 import httpx
 
 from app.core.config import settings
+from app.core.logging_config import app_logger
 
 
 class FinnhubService:
@@ -49,7 +50,7 @@ class FinnhubService:
                     news_items = response.json()
                     return [self._transform_news_item(item, ticker) for item in news_items]
         except Exception as e:
-            print(f"Error fetching Finnhub news for {ticker}: {e}")
+            app_logger.error(f"Error fetching Finnhub news for {ticker}: {e}", extra={"error": str(e)})
 
         return []
 
@@ -72,7 +73,7 @@ class FinnhubService:
                 if response.status_code == 200:
                     return response.json()
         except Exception as e:
-            print(f"Error fetching market news: {e}")
+            app_logger.error(f"Error fetching market news: {e}", extra={"error": str(e)})
 
         return []
 

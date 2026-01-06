@@ -259,6 +259,160 @@ async def test_create_watchlist(client: AsyncClient):
 - **Business logic**: 90%+ coverage
 - **Overall**: 70%+ coverage
 
+### Integration Testing
+
+Integration tests verify complete user workflows and system interactions.
+
+#### Test Complete User Workflows
+
+```python
+@pytest.mark.asyncio
+async def test_complete_user_workflow(client: AsyncClient):
+    """
+    Test: Register -> Login -> Create Watchlist -> Add Stock -> Verify
+    """
+    # 1. Register user
+    register_response = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "test@example.com",
+            "password": "SecurePass123",
+            "name": "Test User"
+        }
+    )
+    assert register_response.status_code == 201
+
+    # 2. Login
+    login_response = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "test@example.com", "password": "SecurePass123"}
+    )
+    access_token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # 3. Create watchlist
+    watchlist_response = await client.post(
+        "/api/v1/watchlist",
+        headers=headers,
+        json={"name": "Tech Stocks"}
+    )
+    watchlist_id = watchlist_response.json()["id"]
+
+    # 4. Add stock to watchlist
+    stock_response = await client.post(
+        f"/api/v1/watchlist/{watchlist_id}/items",
+        headers=headers,
+        json={"ticker": "AAPL", "notes": "Apple Inc."}
+    )
+    assert stock_response.status_code == 201
+
+    # 5. Verify watchlist contains stock
+    get_response = await client.get(
+        f"/api/v1/watchlist/{watchlist_id}",
+        headers=headers
+    )
+    watchlist = get_response.json()
+    assert len(watchlist["items"]) == 1
+    assert watchlist["items"][0]["ticker"] == "AAPL"
+```
+
+#### Test AI Discovery Workflow
+
+```python
+from unittest.mock import AsyncMock, patch
+
+@pytest.mark.asyncio
+async def test_ai_discovery_integration(client: AsyncClient):
+    """
+    Test: Login -> Run AI Discovery -> Verify Results
+    """
+    # Login as user
+    headers = await get_auth_headers(client)
+
+    # Mock Anthropic API
+    with patch('app.services.ai_service.anthropic.AsyncAnthropic') as mock_client:
+        # Setup mock response
+        mock_response = AsyncMock()
+        mock_response.content = [
+            AsyncMock(text='{"stocks": [{"ticker": "NVDA", "rationale": "AI leader"}]}')
+        ]
+        mock_client.return_value.messages.create = AsyncMock(
+            return_value=mock_response
+        )
+
+        # Run discovery
+        discovery_response = await client.post(
+            "/api/v1/research/discover",
+            headers=headers,
+            json={"themes": ["artificial intelligence", "semiconductors"]}
+        )
+
+        assert discovery_response.status_code == 200
+        results = discovery_response.json()
+        assert "stocks" in results
+        assert any(s["ticker"] == "NVDA" for s in results["stocks"])
+```
+
+#### Test Database State Verification
+
+```python
+@pytest.mark.asyncio
+async def test_verify_database_state(
+    client: AsyncClient,
+    db_session: AsyncSession
+):
+    """Verify database state after operations"""
+    headers = await get_auth_headers(client)
+
+    # Create watchlist
+    watchlist_response = await client.post(
+        "/api/v1/watchlist",
+        headers=headers,
+        json={"name": "Growth Stocks"}
+    )
+    watchlist_id = watchlist_response.json()["id"]
+
+    # Verify in database
+    from app.models.watchlist import Watchlist
+    result = await db_session.execute(
+        select(Watchlist).where(Watchlist.id == watchlist_id)
+    )
+    db_watchlist = result.scalar_one()
+    assert db_watchlist.name == "Growth Stocks"
+```
+
+#### Integration Test Checklist
+
+Run these integration tests before each PR:
+
+- [ ] User registration and authentication flow
+- [ ] Watchlist creation and management
+- [ ] Stock addition and removal
+- [ ] Token refresh and rotation
+- [ ] Input validation (tickers, passwords)
+- [ ] Error handling and edge cases
+- [ ] Database state consistency
+- [ ] Rate limiting enforcement
+- [ ] AI discovery workflow (with mocks)
+- [ ] News analysis pipeline (with mocks)
+- [ ] Research task lifecycle
+
+#### Running Integration Tests
+
+```bash
+# Run all integration tests
+pytest backend/tests/test_integration.py -v
+
+# Run specific workflow test
+pytest backend/tests/test_integration.py::TestUserWatchlistWorkflow -v
+
+# Run with coverage
+pytest backend/tests/ --cov=app --cov-report=html
+
+# Run integration tests in parallel (faster)
+pytest backend/tests/test_integration.py -n auto
+```
+
 ## Frontend Architecture
 
 ### TypeScript Conventions
