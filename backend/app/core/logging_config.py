@@ -3,7 +3,12 @@ Structured logging configuration for the application.
 """
 import logging
 import sys
-from pythonjsonlogger import jsonlogger
+
+try:
+    from pythonjsonlogger import jsonlogger
+    HAS_JSON_LOGGER = True
+except ImportError:
+    HAS_JSON_LOGGER = False
 
 from app.core.config import settings
 
@@ -21,11 +26,16 @@ def setup_logging():
     # Create console handler
     handler = logging.StreamHandler(sys.stdout)
 
-    # Create JSON formatter
-    formatter = jsonlogger.JsonFormatter(
-        "%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(lineno)d",
-        timestamp=True
-    )
+    # Create JSON formatter if available, otherwise use standard formatter
+    if HAS_JSON_LOGGER:
+        formatter = jsonlogger.JsonFormatter(
+            "%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(lineno)d",
+            timestamp=True
+        )
+    else:
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
 
     handler.setFormatter(formatter)
     logger.addHandler(handler)

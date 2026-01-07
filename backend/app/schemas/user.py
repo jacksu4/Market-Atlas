@@ -75,5 +75,15 @@ class TelegramConnect(BaseModel):
     chat_id: str
 
 
+class NotificationPreferences(BaseModel):
+    news_alerts: Optional[bool] = None
+    filing_alerts: Optional[bool] = None
+    research_complete: Optional[bool] = None
+
+
+class SettingsUpdate(BaseModel):
+    notification_preferences: Optional[NotificationPreferences] = None
+
+
 class RefreshTokenRequest(BaseModel):
     refresh_token: str

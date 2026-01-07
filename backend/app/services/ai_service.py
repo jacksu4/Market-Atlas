@@ -78,6 +78,53 @@ Only output valid JSON, no other text.""",
                 "ai_summary": "",
             }
 
+    def analyze_news_importance_sync(self, headline: str, summary: str) -> dict:
+        """
+        Classify news importance and sentiment using Claude Haiku.
+        Used specifically for notification filtering.
+
+        Returns:
+        {
+            "importance": "high" | "medium" | "low",
+            "sentiment": "bullish" | "bearish" | "neutral",
+            "summary": "Brief explanation",
+            "rationale": "Why this is important"
+        }
+        """
+        try:
+            message = self.client.messages.create(
+                model=settings.CLAUDE_HAIKU_MODEL,
+                max_tokens=500,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"""Analyze this stock market news and classify its importance and sentiment.
+
+Headline: {headline}
+Summary: {summary}
+
+Classification criteria:
+- Importance: HIGH (material impact, earnings, M&A, regulatory), MEDIUM (notable but not critical), LOW (minor updates)
+- Sentiment: BULLISH (positive for stock), BEARISH (negative), NEUTRAL
+
+Return JSON: {{"importance": "...", "sentiment": "...", "summary": "...", "rationale": "..."}}
+
+Only output valid JSON.""",
+                    }
+                ],
+            )
+
+            result = extract_json(message.content[0].text)
+            return result
+        except Exception as e:
+            app_logger.error(f"AI news importance analysis error: {e}")
+            return {
+                "importance": "medium",
+                "sentiment": "neutral",
+                "summary": summary[:200] if summary else headline[:200],
+                "rationale": "Analysis unavailable"
+            }
+
     def analyze_sec_filing_sync(self, filing_type: str, text: str, ticker: str) -> dict:
         """Synchronous version for Celery tasks"""
         max_chars = 150000

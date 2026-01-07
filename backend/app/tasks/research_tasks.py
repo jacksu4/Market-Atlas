@@ -312,6 +312,42 @@ def analyze_sec_filing(filing_id: str):
             filing.analyzed_at = datetime.now(timezone.utc)
             db.commit()
 
+            # Send notification to users watching this ticker
+            from app.models.watchlist import Watchlist, WatchlistItem
+            from app.core.logging_config import app_logger
+
+            users_result = db.execute(
+                select(User)
+                .join(Watchlist, Watchlist.user_id == User.id)
+                .join(WatchlistItem, WatchlistItem.watchlist_id == Watchlist.id)
+                .where(WatchlistItem.ticker == filing.ticker)
+                .distinct()
+            )
+            users = users_result.scalars().all()
+
+            for user in users:
+                chat_id = user.settings.get("telegram_chat_id") if user.settings else None
+                prefs = user.settings.get("notification_preferences", {}) if user.settings else {}
+
+                if chat_id and prefs.get("filing_alerts", True):
+                    try:
+                        telegram_service.send_sec_filing_notification_sync(
+                            chat_id,
+                            filing.ticker,
+                            filing.filing_type.value,
+                            filing.ai_summary or "Analysis completed. Please check details."
+                        )
+                        app_logger.info(
+                            "Filing notification sent",
+                            extra={
+                                "user_id": str(user.id),
+                                "ticker": filing.ticker,
+                                "filing_type": filing.filing_type.value
+                            }
+                        )
+                    except Exception as e:
+                        app_logger.error(f"Failed to send filing notification: {e}")
+
             return {"success": True}
 
         except Exception as e:
