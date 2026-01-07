@@ -142,45 +142,45 @@ def run_deep_dive_task(task_id: str):
             params = task.parameters or {}
             ticker = params.get("ticker", "")
 
-            # Gather data
+            # Gather data from FMP (may be empty for some stocks)
             task.progress = 20
             db.commit()
 
             # Get company profile
             profile = fmp_service.get_company_profile_sync(ticker)
 
-            # Get recent earnings transcript
-            task.progress = 40
-            db.commit()
-            transcript = fmp_service.get_earnings_transcript_sync(ticker)
-
             # Get income statements
-            task.progress = 60
+            task.progress = 40
             db.commit()
             financials = fmp_service.get_income_statement_sync(ticker, period="annual", limit=3)
 
-            # Build research report
-            results = {
-                "ticker": ticker,
-                "profile": profile or {},
-                "recent_financials": financials,
-                "earnings_transcript_available": transcript is not None,
-            }
+            # Generate comprehensive AI analysis (always runs, even without FMP data)
+            task.progress = 60
+            db.commit()
 
-            # Analyze earnings call if available
+            deep_dive_analysis = ai_service.run_deep_dive_sync(
+                ticker=ticker,
+                profile=profile,
+                financials=financials
+            )
+
+            # Check for earnings transcript and add analysis if available
+            task.progress = 80
+            db.commit()
+            transcript = fmp_service.get_earnings_transcript_sync(ticker)
+
             if transcript:
                 transcript_text = transcript.get("content", "")
                 if transcript_text:
-                    task.progress = 80
-                    db.commit()
                     earnings_analysis = ai_service.analyze_earnings_call_sync(
                         transcript_text,
                         ticker,
                         transcript.get("quarter", "Recent"),
                     )
-                    results["earnings_analysis"] = earnings_analysis
+                    deep_dive_analysis["earnings_analysis"] = earnings_analysis
 
-            task.results = results
+            # Store the AI-generated report as the main result
+            task.results = deep_dive_analysis
             task.status = TaskStatus.COMPLETED
             task.progress = 100
             task.completed_at = datetime.now(timezone.utc)

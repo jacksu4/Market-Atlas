@@ -75,23 +75,26 @@ export default function WatchlistPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading watchlists...</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-muted-foreground text-sm">Loading watchlists...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Watchlists</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-bold tracking-tight gradient-text">Watchlists</h1>
+          <p className="text-muted-foreground mt-2">
             Track and monitor your stocks
           </p>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
               <Plus className="h-4 w-4 mr-2" />
               New Watchlist
             </Button>
@@ -127,12 +130,18 @@ export default function WatchlistPage() {
       </div>
 
       {watchlists.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">
+        <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="p-4 rounded-full bg-primary/10 mb-4">
+              <Plus className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-muted-foreground mb-4 text-lg">
               You don&apos;t have any watchlists yet
             </p>
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Watchlist
             </Button>
@@ -141,32 +150,32 @@ export default function WatchlistPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {watchlists.map((watchlist) => (
-            <Card key={watchlist.id} className="group relative">
+            <Card key={watchlist.id} className="group relative border-border/40 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-300">
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-destructive/10"
                 onClick={() => handleDeleteWatchlist(watchlist.id, watchlist.name)}
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
 
-              <Link href={`/watchlist/${watchlist.id}`}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{watchlist.name}</CardTitle>
+              <Link href={`/watchlist/${watchlist.id}`} className="block">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl group-hover:text-primary transition-colors">{watchlist.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {watchlist.items.length} stocks
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1.5">
                     {watchlist.items.slice(0, 5).map((item) => (
-                      <Badge key={item.id} variant="secondary">
+                      <Badge key={item.id} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                         {item.ticker}
                       </Badge>
                     ))}
                     {watchlist.items.length > 5 && (
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="border-border/40">
                         +{watchlist.items.length - 5} more
                       </Badge>
                     )}

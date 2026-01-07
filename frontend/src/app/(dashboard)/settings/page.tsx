@@ -71,7 +71,10 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+          <p className="text-muted-foreground text-sm">Loading settings...</p>
+        </div>
       </div>
     );
   }
@@ -83,12 +86,21 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <h1 className="text-4xl font-bold tracking-tight gradient-text">Settings</h1>
+        <p className="text-muted-foreground mt-2">
+          Manage your account and notification preferences
+        </p>
+      </div>
+
       {/* Profile Section */}
-      <Card>
+      <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Shield className="h-5 w-5 text-primary" />
+            </div>
             Profile
           </CardTitle>
           <CardDescription>Your account information</CardDescription>
@@ -119,10 +131,12 @@ export default function SettingsPage() {
       </Card>
 
       {/* Telegram Section */}
-      <Card>
+      <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <div className="p-2 rounded-lg bg-accent/10">
+              <MessageCircle className="h-5 w-5 text-accent" />
+            </div>
             Telegram Notifications
           </CardTitle>
           <CardDescription>
@@ -186,10 +200,12 @@ export default function SettingsPage() {
       </Card>
 
       {/* Notification Preferences */}
-      <Card>
+      <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Bell className="h-5 w-5 text-primary" />
+            </div>
             Notification Preferences
           </CardTitle>
           <CardDescription>
