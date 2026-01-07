@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str = ""
     TELEGRAM_BOT_USERNAME: str = "market_atlas_bot"
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
+
     # AI Model Configuration
     CLAUDE_HAIKU_MODEL: str = "claude-3-5-haiku-20241022"
     CLAUDE_SONNET_MODEL: str = "claude-sonnet-4-20250514"

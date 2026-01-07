@@ -1,4 +1,9 @@
+import secrets
+from urllib.parse import urlencode
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
@@ -18,6 +23,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, RefreshTokenRequest, TelegramConnect, SettingsUpdate
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.core.logging_config import app_logger
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -266,3 +272,204 @@ async def generate_telegram_link(
         "link": f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start={token}",
         "expires_in": 600
     }
+
+
+# ============== Google OAuth ==============
+
+# In-memory state storage (use Redis in production for multi-instance)
+_oauth_states: dict[str, bool] = {}
+
+
+@router.get("/google/login")
+async def google_login(request: Request):
+    """
+    Initiate Google OAuth flow.
+    Redirects user to Google's authorization page.
+    """
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google OAuth is not configured"
+        )
+
+    # Generate state for CSRF protection
+    state = secrets.token_urlsafe(32)
+    _oauth_states[state] = True
+
+    # Build Google authorization URL
+    params = {
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "offline",
+        "prompt": "select_account",
+    }
+
+    google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+
+    return RedirectResponse(url=google_auth_url)
+
+
+@router.get("/google/callback")
+async def google_callback(
+    request: Request,
+    code: str = None,
+    state: str = None,
+    error: str = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Handle Google OAuth callback.
+    Exchanges code for tokens, creates/logs in user, redirects to frontend.
+    """
+    # Handle errors from Google
+    if error:
+        app_logger.warning(f"Google OAuth error: {error}")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?error=google_auth_failed"
+        )
+
+    # Validate state (CSRF protection)
+    if not state or state not in _oauth_states:
+        app_logger.warning("Invalid OAuth state")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?error=invalid_state"
+        )
+
+    # Remove used state
+    _oauth_states.pop(state, None)
+
+    if not code:
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?error=no_code"
+        )
+
+    try:
+        # Exchange code for tokens
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+                }
+            )
+
+            if token_response.status_code != 200:
+                app_logger.error(f"Google token exchange failed: {token_response.text}")
+                return RedirectResponse(
+                    url=f"{settings.FRONTEND_URL}/login?error=token_exchange_failed"
+                )
+
+            token_data = token_response.json()
+            google_access_token = token_data.get("access_token")
+
+            # Get user info from Google
+            userinfo_response = await client.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {google_access_token}"}
+            )
+
+            if userinfo_response.status_code != 200:
+                app_logger.error(f"Google userinfo failed: {userinfo_response.text}")
+                return RedirectResponse(
+                    url=f"{settings.FRONTEND_URL}/login?error=userinfo_failed"
+                )
+
+            google_user = userinfo_response.json()
+
+        # Extract user info
+        google_id = google_user.get("id")
+        email = google_user.get("email")
+        name = google_user.get("name", email.split("@")[0] if email else "User")
+
+        if not email:
+            return RedirectResponse(
+                url=f"{settings.FRONTEND_URL}/login?error=no_email"
+            )
+
+        # Check if user exists by OAuth ID
+        result = await db.execute(
+            select(User).where(
+                User.oauth_provider == "google",
+                User.oauth_id == google_id
+            )
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            # Check if email already exists (password user)
+            result = await db.execute(
+                select(User).where(User.email == email)
+            )
+            existing_user = result.scalar_one_or_none()
+
+            if existing_user:
+                # Email exists but not linked to Google
+                if existing_user.oauth_provider:
+                    # Already linked to different OAuth provider
+                    return RedirectResponse(
+                        url=f"{settings.FRONTEND_URL}/login?error=email_linked_other_provider"
+                    )
+                else:
+                    # Password user - link Google account
+                    existing_user.oauth_provider = "google"
+                    existing_user.oauth_id = google_id
+                    await db.commit()
+                    user = existing_user
+                    app_logger.info(f"Linked Google account to existing user: {email}")
+            else:
+                # Create new user
+                user = User(
+                    email=email,
+                    name=name,
+                    oauth_provider="google",
+                    oauth_id=google_id,
+                    settings={
+                        "notification_preferences": {
+                            "news_alerts": True,
+                            "filing_alerts": True,
+                            "research_complete": True,
+                        }
+                    },
+                )
+                db.add(user)
+                await db.commit()
+                await db.refresh(user)
+                app_logger.info(f"Created new Google user: {email}")
+
+        if not user.is_active:
+            return RedirectResponse(
+                url=f"{settings.FRONTEND_URL}/login?error=account_inactive"
+            )
+
+        # Generate JWT tokens
+        access_token = create_access_token(data={"sub": str(user.id)})
+        refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+        # Store refresh token
+        await token_manager.store_refresh_token(
+            str(user.id),
+            refresh_token,
+            settings.REFRESH_TOKEN_EXPIRE_DAYS
+        )
+
+        # Redirect to frontend with tokens
+        redirect_url = (
+            f"{settings.FRONTEND_URL}/auth/callback"
+            f"?access_token={access_token}"
+            f"&refresh_token={refresh_token}"
+        )
+
+        return RedirectResponse(url=redirect_url)
+
+    except Exception as e:
+        app_logger.error(f"Google OAuth error: {str(e)}")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?error=server_error"
+        )
